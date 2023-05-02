@@ -178,7 +178,7 @@ public class MazeSwapScript : MonoBehaviour
 
 	void updateMaze()
 	{
-		if (Range(0, 33) == 0)
+		if (Range(0, 3) == 0)
 		{
 			flipped = !flipped;
 			currentColor = flipped ? 1 : 0;
