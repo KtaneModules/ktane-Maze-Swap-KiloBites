@@ -2,15 +2,17 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 using KModkit;
-using static UnityEngine.Random;
+using UnityEngine;
 using static UnityEngine.Debug;
+using static UnityEngine.Random;
 
 public class MazeSwapScript : MonoBehaviour
 {
+    private const string _directionLetters = "URDL";
+    private readonly int[] _directionOffsets = new int[] { -6, 1, 6, -1 };
 
-	public KMBombInfo Bomb;
+    public KMBombInfo Bomb;
 	public KMAudio Audio;
 	public KMBombModule Module;
 	public KMColorblindMode Colorblind;
@@ -152,12 +154,11 @@ public class MazeSwapScript : MonoBehaviour
 		}
 
 		var ix = Array.IndexOf(arrowButtons, arrow);
-		var dirs = new int[] { -6, 1, 6, -1 };
-		var markers = "URDL".ToCharArray();
+		var markers = _directionLetters.ToCharArray();
 
 		if (!selectedMazes[currentColor][currentPos].Contains(markers[ix]))
 		{
-			currentPos += dirs[ix];
+			currentPos += _directionOffsets[ix];
 		}
 		else
 		{
@@ -211,15 +212,124 @@ public class MazeSwapScript : MonoBehaviour
 
 
 #pragma warning disable 414
-	private readonly string TwitchHelpMessage = @"Use <!{0} foobar> to do something.";
+	private readonly string TwitchHelpMessage = @"Use '!{0} UDLR' to press those arrows; "
+                                                 + "command execution will be stopped if the triangle changes colour.";
 #pragma warning restore 414
 
-	IEnumerator ProcessTwitchCommand(string command)
-	{
-		command = command.Trim().ToUpperInvariant();
-		List<string> parameters = command.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
-		yield return null;
-	}
-}
+    private readonly Dictionary<char, char> _reversedDirections = new Dictionary<char, char> {
+        {'U', 'D'},
+        {'D', 'U'},
+        {'R', 'L'},
+        {'L', 'R'}
+    };
 
+    private string[][] _directionMaps;
+    private int[][] _depthMaps;
+
+    private IEnumerator ProcessTwitchCommand(string command) {
+        command = command.Trim().ToUpper();
+
+        if (command.Length == 0) {
+            yield return "sendtochaterror That is an empty command!";
+        }
+
+        if (command.Any(c => !_directionLetters.Contains(c))) {
+            yield return "sendtochaterror '" + command.First(c => !"UDLR".Contains(c)) + "' is not a valid direction!";
+        }
+
+        yield return null;
+        int startMaze = currentColor;
+
+        foreach (char direction in command) {
+            if (startMaze == currentColor) {
+                arrowButtons[_directionLetters.IndexOf(direction)].OnInteract();
+                yield return new WaitForSeconds(0.2f);
+            }
+        }
+    }
+
+    private IEnumerator TwitchHandleForcedSolve() {
+        // Ideally would have used a 2D array; however, intial conditions imply that this not ideal.
+        _directionMaps = GetDirectionMaps(selectedMazes, out _depthMaps);
+        yield return null;
+
+        while (!moduleSolved) {
+            arrowButtons[_directionLetters.IndexOf(GetNextMove())].OnInteract();
+            yield return new WaitForSeconds(0.2f);
+        }
+    }
+
+    private string[][] GetDirectionMaps(string[][] mazes, out int[][] depths) {
+        // Use DFS algorithm to find fastest route to goal from any square.
+        string[][] directionMaps = new string[mazes.Length][];
+        depths = new int[mazes.Length][];
+
+        for (int i = 0; i < mazes.Length; i++) {
+            directionMaps[i] = new string[36];
+            depths[i] = new int[36];
+            var currentDepth = new List<int>();
+            var previousDepth = new List<int>();
+            int depth = 1;
+
+            directionMaps[i][goal] = "";
+            depths[i][goal] = 0;
+            previousDepth.Add(goal);
+
+            while (previousDepth.Count() > 0) {
+                foreach (int position in previousDepth) {
+                    foreach (char direction in _directionLetters.Where(d => !mazes[i][position].Contains(d))) {
+                        int newPosition = position + _directionOffsets[_directionLetters.IndexOf(direction)];
+
+                        if (directionMaps[i][newPosition] == null) {
+                            currentDepth.Add(newPosition);
+                            directionMaps[i][newPosition] = _reversedDirections[direction].ToString();
+                            depths[i][newPosition] = depth;
+                        }
+                    }
+                }
+
+                previousDepth = currentDepth.ToList();
+                currentDepth.Clear();
+                depth += 1;
+            }
+        }
+
+        return directionMaps;
+    }
+
+    private string GetNextMove() {
+        int current = flipped ? 1 : 0;
+        int other = 1 - current;
+        int currentDepth = _depthMaps[current][currentPos];
+        int otherDepth = _depthMaps[other][currentPos];
+        string currentDirection = _directionMaps[current][currentPos];
+        string otherDirection = _directionMaps[other][currentPos];
+        string currentWalls = selectedMazes[current][currentPos];
+        string otherWalls = selectedMazes[other][currentPos];
+
+        // Handle direction map not covering current square.
+        if (currentDepth == 0) {
+            if (!currentWalls.Contains(otherDirection)) {
+                return otherDirection;
+            }
+            var sharedDirections = _directionLetters.Where(d => !(currentWalls + otherWalls).Contains(d));
+            if (sharedDirections.Count() != 0) {
+                return sharedDirections.First().ToString();
+            }
+            return _directionLetters.Where(d => !currentWalls.Contains(d)).PickRandom().ToString();
+        }
+
+        // Pick the best direction if possible.
+        if (currentDepth < otherDepth || otherDepth == 0) {
+            return currentDirection;
+        }
+
+        if (!currentWalls.Contains(otherDirection)) {
+            return otherDirection;
+        }
+
+        // Pick random direction.
+        return _directionLetters.Where(d => !currentWalls.Contains(d)).PickRandom().ToString();
+    }
+}
 
