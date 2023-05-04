@@ -325,7 +325,7 @@ public class MazeSwapScript : MonoBehaviour
     }
 
     private string[][] GetDirectionMaps(string[][] mazes, out int[][] depths) {
-        // Use DFS algorithm to find fastest route to goal from any square.
+        // Use BFS algorithm to find fastest route to goal from any square.
         string[][] directionMaps = new string[mazes.Length][];
         depths = new int[mazes.Length][];
 
@@ -371,13 +371,14 @@ public class MazeSwapScript : MonoBehaviour
         string otherDirection = _directionMaps[other][currentPos];
         string currentWalls = selectedMazes[current][currentPos];
         string otherWalls = selectedMazes[other][currentPos];
+		var sharedDirections = _directionLetters.Where(d => !(currentWalls + otherWalls).Contains(d));
+
 
         // Handle direction map not covering current square.
         if (currentDepth == 0) {
             if (!currentWalls.Contains(otherDirection)) {
                 return otherDirection;
             }
-            var sharedDirections = _directionLetters.Where(d => !(currentWalls + otherWalls).Contains(d));
             if (sharedDirections.Count() != 0) {
                 return sharedDirections.First().ToString();
             }
@@ -391,6 +392,10 @@ public class MazeSwapScript : MonoBehaviour
 
         if (!currentWalls.Contains(otherDirection)) {
             return otherDirection;
+        }
+
+		if (sharedDirections.Contains(char.Parse(currentDirection))) {
+            return currentDirection;
         }
 
         // Pick random direction.
