@@ -1,0 +1,10 @@
+{
+  "name": "mazeSwap-Editor",
+  "references": [
+    "mazeSwap"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": []
+}

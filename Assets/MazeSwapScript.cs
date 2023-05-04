@@ -20,6 +20,7 @@ public class MazeSwapScript : MonoBehaviour
 	public KMSelectable[] arrowButtons;
 
 	public TextMesh[] grid, markers, triCB;
+	public TextMesh markerCB;
 	public GameObject[] triangleObj;
 	public MeshRenderer[] triangleRends;
 	public Material[] triangles;
@@ -81,8 +82,8 @@ public class MazeSwapScript : MonoBehaviour
 
 		var mazeSelection = new int[2];
 
-		mazeSelection[0] = Enumerable.Range(0, 14).PickRandom();
-		mazeSelection[1] = Enumerable.Range(0, 14).Where(x => x != mazeSelection[0]).PickRandom();
+		mazeSelection[0] = Enumerable.Range(0, 15).PickRandom();
+		mazeSelection[1] = Enumerable.Range(0, 15).Where(x => x != mazeSelection[0]).PickRandom();
 
 		for (int i = 0; i < 2; i++)
 		{
@@ -114,7 +115,9 @@ public class MazeSwapScript : MonoBehaviour
 		Log($"[Maze Swap #{moduleId}] Your starting position is at {mazeCoords(start)} in the {new[] { "Green", "Cyan" }[currentColor]} maze.");
 		Log($"[Maze Swap #{moduleId}] Your goal is at {mazeCoords(goal)}.");
 
-		mazeInformation();
+		markerCB.text = cbActive ? $"GREEN: {ix1.Join(", ")}\nCYAN: {ix2.Join(", ")}" : "";
+
+        mazeInformation();
 	}
 
 	void mazeInformation()
@@ -143,6 +146,30 @@ public class MazeSwapScript : MonoBehaviour
 		}
 	}
 
+	void tpCBUpdate()
+	{
+		cbActive = !cbActive;
+
+        var ix1 = new List<string>();
+        var ix2 = new List<string>();
+
+        for (int i = 0; i < 36; i++)
+        {
+            if (mazeMarkers[0][i])
+            {
+                ix1.Add(mazeCoords(i));
+            }
+            if (mazeMarkers[1][i])
+            {
+                ix2.Add(mazeCoords(i));
+            }
+            triCB[i].text = cbActive ? cbColors[currentColor].ToString() : "";
+        }
+
+        markerCB.text = cbActive ? $"GREEN: {ix1.Join(", ")}\nCYAN: {ix2.Join(", ")}" : "";
+
+    }
+
 	void arrowPress(KMSelectable arrow)
 	{
 		Audio.PlayGameSoundAtTransform(KMSoundOverride.SoundEffect.ButtonPress, transform);
@@ -159,6 +186,7 @@ public class MazeSwapScript : MonoBehaviour
 		if (!selectedMazes[currentColor][currentPos].Contains(markers[ix]))
 		{
 			currentPos += _directionOffsets[ix];
+			Log($"[Maze Swap #{moduleId}] Pressed {new[] { "Up", "Right", "Down", "Left" }[ix]}. New current position is: {mazeCoords(currentPos)}");
 		}
 		else
 		{
@@ -172,6 +200,12 @@ public class MazeSwapScript : MonoBehaviour
 		}
 		else
 		{
+			for (int i = 0; i < 36; i++)
+			{
+				grid[i].color = posColors[0];
+                grid[i].GetComponentInChildren<MeshRenderer>().material = toggleFontMat[0];
+            }
+			Audio.PlaySoundAtTransform("Solve", transform);
 			moduleSolved = true;
 			Module.HandlePass();
 		}
@@ -213,7 +247,7 @@ public class MazeSwapScript : MonoBehaviour
 
 #pragma warning disable 414
 	private readonly string TwitchHelpMessage = @"Use '!{0} UDLR' to press those arrows; "
-                                                 + "command execution will be stopped if the triangle changes colour.";
+                                                 + "command execution will be stopped if the triangle changes color. " + "|| !{0} CB to toggle colorblind mode.";
 #pragma warning restore 414
 
     private readonly Dictionary<char, char> _reversedDirections = new Dictionary<char, char> {
@@ -226,15 +260,41 @@ public class MazeSwapScript : MonoBehaviour
     private string[][] _directionMaps;
     private int[][] _depthMaps;
 
+	private string getModuleCode()
+	{
+		Transform closest = null;
+		float closestDistance = float.MaxValue;
+
+		foreach (Transform children in transform.parent)
+		{
+			var distance = (transform.position - children.position).magnitude;
+			if (children.gameObject.name == "TwitchModule(Clone)" && (closest == null || distance < closestDistance))
+			{
+				closest = children;
+				closestDistance = distance;
+			}
+		}
+
+		return closest != null ? closest.Find("MultiDeckerUI").Find("IDText").GetComponent<UnityEngine.UI.Text>().text : null;
+	}
+
     private IEnumerator ProcessTwitchCommand(string command) {
         command = command.Trim().ToUpper();
 
+		if ("CB".Contains(command))
+		{
+			tpCBUpdate();
+			yield break;
+		}
+
         if (command.Length == 0) {
             yield return "sendtochaterror That is an empty command!";
+			yield break;
         }
 
         if (command.Any(c => !_directionLetters.Contains(c))) {
             yield return "sendtochaterror '" + command.First(c => !"UDLR".Contains(c)) + "' is not a valid direction!";
+			yield break;
         }
 
         yield return null;
@@ -245,6 +305,11 @@ public class MazeSwapScript : MonoBehaviour
                 arrowButtons[_directionLetters.IndexOf(direction)].OnInteract();
                 yield return new WaitForSeconds(0.2f);
             }
+			else
+			{
+				yield return $"sendtochat Input has been interupted due to the triangle changing to {new[] { "Green", "Cyan" }[currentColor]} on Module {getModuleCode()} (Maze Swap).";
+				yield break;
+			}
         }
     }
 
