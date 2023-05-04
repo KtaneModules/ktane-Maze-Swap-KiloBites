@@ -18,7 +18,10 @@ MonoBehaviour:
     a wall here. Nice.
 
 
-    Navigate through one of the two mazes based off of two indicator pairs.'
+    Navigate through one of the two mazes based off of two indicator pairs.
+
+
+    Manual by Lumbud84, Implemented by Kilo Bites, Twitch Plays Support by Kuro'
   version: 1
   outputFolder: build
-  previewImage: {fileID: 0}
+  previewImage: {fileID: 2800000, guid: 2f1967ca910e6344499bbd98a6876946, type: 3}

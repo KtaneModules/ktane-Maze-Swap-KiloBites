@@ -13360,7 +13360,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   HighlightScale: {x: 1, y: 0, z: 1}
-  OutlineAmount: 0.01
+  OutlineAmount: 0
 --- !u!114 &114139297393846426
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -14628,7 +14628,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   HighlightScale: {x: 1, y: 0, z: 1}
-  OutlineAmount: 0.01
+  OutlineAmount: 0
 --- !u!114 &114624713642710458
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -15399,7 +15399,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   HighlightScale: {x: 1, y: 0, z: 1}
-  OutlineAmount: 0.01
+  OutlineAmount: 0
 --- !u!114 &114937880798979986
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -15425,7 +15425,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   HighlightScale: {x: 1, y: 0, z: 1}
-  OutlineAmount: 0.01
+  OutlineAmount: 0
 --- !u!114 &114944640548819244
 MonoBehaviour:
   m_ObjectHideFlags: 1
