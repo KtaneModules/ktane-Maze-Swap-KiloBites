@@ -385,7 +385,7 @@ public class MazeSwapScript : MonoBehaviour
         }
 
         // Pick the best direction if possible.
-        if (currentDepth < otherDepth || otherDepth == 0) {
+        if (currentDepth <= otherDepth || otherDepth == 0) {
             return currentDirection;
         }
 
