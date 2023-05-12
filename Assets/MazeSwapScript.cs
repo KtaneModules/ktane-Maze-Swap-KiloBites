@@ -35,6 +35,7 @@ public class MazeSwapScript : MonoBehaviour
 	private int start, currentPos, goal;
 	private int currentColor = 0;
 	private bool flipped;
+	private int[] flipHistory = new int[36];
 
 	private bool[][] mazeMarkers = new bool[2][];
 	private string[][] selectedMazes = new string[2][];
@@ -213,10 +214,13 @@ public class MazeSwapScript : MonoBehaviour
 
 	void updateMaze()
 	{
-		if (Range(0, 3) == 0)
+		if (Range(0, 2) == 0 && new int[] {0, currentColor + 1}.Contains(flipHistory[currentPos]))
 		{
+			Audio.PlaySoundAtTransform("Swap", transform);
 			flipped = !flipped;
 			currentColor = flipped ? 1 : 0;
+			flipHistory[currentPos] = currentColor + 1;
+
 			Log($"[Maze Swap #{moduleId}] The triangle has now changed to {new[] { "Green", "Cyan" }[currentColor]}.");
 		}
 
